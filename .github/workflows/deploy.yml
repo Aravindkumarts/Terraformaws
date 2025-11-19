@@ -1,0 +1,33 @@
+name: Deploy Docker Container to EC2
+
+on:
+  push:
+    branches:
+      - main # Ensure this matches your primary branch name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: SSH and Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        # Secrets you configured in GitHub Settings
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          echo "Starting deployment on EC2..."
+          # 1. Build the new Docker image
+          docker build -t my-app:latest .
+
+          # 2. Stop and remove the old container gracefully
+          docker stop my-app-container || true
+          docker rm my-app-container || true
+
+          # 3. Run the new container from the newly built image
+          docker run -d --name my-app-container -p 80:80 my-app:latest
+          echo "Deployment complete."
